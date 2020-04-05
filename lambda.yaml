@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda function with cfn-response.
+Resources:
+  primer:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs12.x
+      Role: arn:aws:iam::700390809169:role/Lambda_role
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+              // TODO implement
+              const response = {
+                statusCode: 200,
+                body: JSON.stringify('Hello from Lambda!'),
+              };
+              return response;
+		  };
+      Description: Invoke a function during stack creation.
+      TracingConfig:
+        Mode: Active
