@@ -1,0 +1,947 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Service Role For AWS Batch with AWS managed AWSBatchSErviceRole"
+Parameters:
+  CodeBucket: 
+    Description: "Enter the bucket name which contain the .zip files of the lambda function."
+    Type: String
+    Default: lly-aise-trigger-files-s3-qa 
+  AlertInterfaceBucket: 
+    Description: "Enter the interface bucket name for the aise alert engine."
+    Type: String
+    Default: lly-aise-interface-alert-s3-qa
+  AlertInprocessBucket:
+    Description: "Enter the inprocess bucket name for aise  alert engine" 
+    Type: String
+    Default: lly-aise-inprocess-alert-s3-qa
+  TriggerBucket:
+    Description: "Enter the File trigger bucket name" 
+    Type: String
+    Default: lly-aise-trigger-files-s3-qa
+  SecurityGrp:
+    Description: "Enter the security group in which Compute environment needs to be created"
+    Type: String
+    Default: sg-0f08a9d894c8af726
+  Subnet:
+    Description: "Enter the Subnet ID in which Compute environment needs to be created"
+    Type: String
+    Default: subnet-097e757fa946d69f1
+  AmiId:
+    Description: "Enter the AMI ID using which Compute environment needs to be created"
+    Type: String
+    Default: ami-0ae3cc77a7fafbfd8
+  TimemdlContainerImg:
+    Description: "Enter the Conatiner image for time-modeling to be used in Job Definition"
+    Type: String  
+    Default: elilillyco-aise-qa-docker-lc.jfrog.io/time-modeling:latest    
+  StockContainerImg:
+    Description: "Enter the Conatiner image for stock to be used in Job Definition"
+    Type: String
+    Default: elilillyco-aise-qa-docker-lc.jfrog.io/stock:latest    
+  TrendContainerImage:
+    Description: "Enter the Conatiner image for trend to be used in Job Definition"
+    Type: String  
+    Default: elilillyco-aise-qa-docker-lc.jfrog.io/trend:latest
+    
+Resources:
+  llyaiseconsolidatealertfilelfn: 
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: lly-aise-consolidate-alert-file-lfn
+      Tags: 
+      - 
+        Key: "CostCenter"
+        Value: "0004656000"
+      - 
+        Key: "CostCenterApprover"
+        Value: "RieTawa2091353"
+      - 
+        Key: "SystemOwner"
+        Value: "RieTawa2091353"
+      - 
+        Key: "SystemCustodian"
+        Value: "RyojiOkabe2193686"
+      - 
+        Key: "PrimaryItContact"
+        Value: "CliffHu2277809"
+      - 
+        Key: "Name"
+        Value: "llyaiseschedulecibtch"
+      - 
+        Key: "Level1BusinessArea"
+        Value: "BioMedicinesBusinessUnit"
+      - 
+        Key: "DataClassification"
+        Value: "Yellow"
+      - 
+        Key: "Hipaa"
+        Value: "FALSE"
+      - 
+        Key: "SnowRequestId"
+        Value: "XXXX"
+      - 
+        Key: "ResourceCI"
+        Value: "CI00000000413229"
+      Environment:
+        Variables:
+          "LOG_FOLDER": logs
+          "SUFFIX_CONSOLIDATE_FILE_NAME": _result.csv
+          "OUTPUT_S3_JDWH_FOLDER": output-s3-jdwh
+          "TARGET_PRODUCT_HCO_TYPE_FILE_NAME": product_hco_type.csv
+      Runtime: python3.8
+      Handler: lambda_function.lambda_handler
+      Layers:
+        - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:lly-aise-pandas-llyr:5' #Check
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-s3rw-lme-srvcrl'
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: aise-lambda-functions/lly-aise-consolidate-alert-file-lfn.zip 
+      Timeout: 900
+      MemorySize: 3008 
+      Description: This function consolidates the output file of stock and trend generated from alert engine and then places the consolidated file in  output-jdwh-s3.
+      TracingConfig:
+        Mode: Active
+
+
+  llyaisealertenginescheckrunlfn: 
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: lly-aise-alert-engines-check-run-lfn
+      Tags: 
+      - 
+        Key: "CostCenter"
+        Value: "0004656000"
+      - 
+        Key: "CostCenterApprover"
+        Value: "RieTawa2091353"
+      - 
+        Key: "SystemOwner"
+        Value: "RieTawa2091353"
+      - 
+        Key: "SystemCustodian"
+        Value: "RyojiOkabe2193686"
+      - 
+        Key: "PrimaryItContact"
+        Value: "CliffHu2277809"
+      - 
+        Key: "Name"
+        Value: "llyaiseschedulecibtch"
+      - 
+        Key: "Level1BusinessArea"
+        Value: "BioMedicinesBusinessUnit"
+      - 
+        Key: "DataClassification"
+        Value: "Yellow"
+      - 
+        Key: "Hipaa"
+        Value: "FALSE"
+      - 
+        Key: "SnowRequestId"
+        Value: "XXXX"
+      - 
+        Key: "ResourceCI"
+        Value: "CI00000000413229"
+      Environment:
+        Variables:
+          "CONFIG__FILE_SUFFIX": _payload.json
+          "ENGINE_CONFIG_FOLDER_NAME": engine-config
+          "ENGINE_SCHEDULE_FOLDER_NAME": engine-schedules
+          "LOGS_FOLDER": logs
+          "PREFIX_TIME_SERIES_ENGINE_OUTPUT_FOLDER": output-timeseries-engine
+          "STEPFUNCTION_FILE_SUFFIX": _engine_stepfunction_status_flag.csv
+          "TIME_SERIES_ENGINE_OUTPUT_FILE_EXTENSION": .zip
+          "ENGINE_BATCH_ARRAY_FOLDER": engine-batch-array-file
+          "ENGINE_SCHEDULE_FILE_SUFFIX": _engine_schedule.csv
+          "INPUT_JDWH_S3_FOLDER": input-jdwh-s3 
+          "PREFIX_TIME_SERIES_ENGINE_OUTPUT_FILE": prophet_results
+          "PRODUCT_HCO_TYPE_FILE_NAME": product_hco_type.csv
+          "STEPFUNCTION_STATUS_FOLDER": stepfunction-status
+      Runtime: python3.8
+      Handler: lambda_function.lambda_handler
+      Layers:
+        - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:lly-aise-pandas-llyr:5' #Check
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-s3rw-cew-lme-srvcrl'
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: aise-lambda-functions/lly-aise-alert-engines-check-run-lfn.zip 
+      Timeout: 900
+      MemorySize: 3008 
+      Description: This function checks the schedule and status of an orchestration. If orchestration can be run then do pre-setup.
+      TracingConfig:
+        Mode: Active
+
+  llyaisetimeseriespostprocessinglfn: 
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: lly-aise-timeseries-postprocessing-lfn
+      Tags: 
+      - 
+        Key: "CostCenter"
+        Value: "0004656000"
+      - 
+        Key: "CostCenterApprover"
+        Value: "RieTawa2091353"
+      - 
+        Key: "SystemOwner"
+        Value: "RieTawa2091353"
+      - 
+        Key: "SystemCustodian"
+        Value: "RyojiOkabe2193686"
+      - 
+        Key: "PrimaryItContact"
+        Value: "CliffHu2277809"
+      - 
+        Key: "Name"
+        Value: "llyaiseschedulecibtch"
+      - 
+        Key: "Level1BusinessArea"
+        Value: "BioMedicinesBusinessUnit"
+      - 
+        Key: "DataClassification"
+        Value: "Yellow"
+      - 
+        Key: "Hipaa"
+        Value: "FALSE"
+      - 
+        Key: "SnowRequestId"
+        Value: "XXXX"
+      - 
+        Key: "ResourceCI"
+        Value: "CI00000000413229"
+      Environment:
+        Variables:
+          "CHECK_STATUS_FILE_KEYS": stepfunction-status/stock_engine_stepfunction_status_flag.csv,stepfunction-status/trend_engine_stepfunction_status_flag.csv
+          "PREFIX_TIME_SERIES_ENGINE_OUTPUT_FILE": prophet_results
+          "SOURCE_PRODUCT_HCOTYPE_FILE_KEY": input-jdwh-s3/product_hco_type.csv
+          "UPDATE_CONFIG_FILE_KEYS": engine-config/stock_payload.json,engine-config/trend_payload.json
+          "LOG_FILE_KEY": logs/timeseries/timeseries_product_hco_type.csv
+          "SOURCE_CONFIG_FILE_KEY": engine-config/timeseries_payload.json
+          "TIME_SERIES_ENGINE_OUTPUT_FILE_EXTENSION": .zip
+      Runtime: python3.8
+      Handler: lambda_function.lambda_handler
+      Layers:
+        - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:lly-aise-pandas-llyr:5' #Check
+      Role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-s3rw-lme-srvcrl'
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: aise-lambda-functions/lly-aise-timeseries-postprocessing-lfn.zip 
+      Timeout: 900
+      MemorySize: 3008 
+      Description: This function checks the schedule and status of an orchestration. If orchestration can be run then do pre-setup.
+      TracingConfig:
+        Mode: Active
+  
+
+###########
+#AWS Batch
+###########
+#compute Environment
+
+#FirstCE
+  llyaisealertce1btch:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      ComputeEnvironmentName:  lly-aise-alert-ce-1-btch
+      Type: MANAGED
+      ServiceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-ab-srvcrl'
+      ComputeResources:
+        AllocationStrategy: BEST_FIT
+        Tags: {"CostCenter" : "0004656000", "CostCenterApprover" : "Rie Tawa(2091353)", "SystemOwner" : "Rie Tawa(2091353)", "SystemCustodian" : "Ryoji Okabe(2193686)", "PrimaryItContact" : "Cliff Hu(2277809)", "Name" : "lly-aise-alert-ci-btch", "Level1BusinessArea" : "Bio-Medicines Business Unit", "DataClassification" : "Yellow", "Hipaa" : "FALSE", "SnowRequestId" : "XXXX", "ResourceCI" : "CI00000000413229"}
+        MaxvCpus: 8
+        DesiredvCpus: 0
+        SecurityGroupIds:
+          - !Ref SecurityGrp
+        Type: EC2
+        Subnets:
+          - !Ref Subnet 
+        MinvCpus: 0
+        ImageId: !Ref AmiId
+        LaunchTemplate:
+          LaunchTemplateId: !ImportValue LaunchTemplt
+          Version: $Default
+        InstanceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:instance-profile/lly-aise-s3rw-cse-srvcrl'
+        InstanceTypes:
+          - optimal
+      State: ENABLED
+#secondCE
+  llyaisealertce2btch:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      ComputeEnvironmentName:  lly-aise-alert-ce-2-btch
+      Type: MANAGED
+      ServiceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-ab-srvcrl'
+      ComputeResources:
+        AllocationStrategy: BEST_FIT
+        Tags: {"CostCenter" : "0004656000", "CostCenterApprover" : "Rie Tawa(2091353)", "SystemOwner" : "Rie Tawa(2091353)", "SystemCustodian" : "Ryoji Okabe(2193686)", "PrimaryItContact" : "Cliff Hu(2277809)", "Name" : "lly-aise-alert-ci-btch", "Level1BusinessArea" : "Bio-Medicines Business Unit", "DataClassification" : "Yellow", "Hipaa" : "FALSE", "SnowRequestId" : "XXXX", "ResourceCI" : "CI00000000413229"}
+        MaxvCpus: 8
+        DesiredvCpus: 0
+        SecurityGroupIds:
+          - !Ref SecurityGrp
+        Type: EC2
+        Subnets:
+          - !Ref Subnet
+        MinvCpus: 0
+        ImageId: !Ref AmiId
+        LaunchTemplate:
+          LaunchTemplateId: !ImportValue LaunchTemplt
+          Version: $Default
+        InstanceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:instance-profile/lly-aise-s3rw-cse-srvcrl'
+        InstanceTypes:
+          - optimal
+      State: ENABLED
+#ThirdCE
+  llyaisealertce3btch:
+    Type: AWS::Batch::ComputeEnvironment
+    Properties:
+      ComputeEnvironmentName:  lly-aise-alert-ce-3-btch
+      Type: MANAGED
+      ServiceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-ab-srvcrl'
+      ComputeResources:
+        AllocationStrategy: BEST_FIT
+        MaxvCpus: 32
+        DesiredvCpus: 0
+        SecurityGroupIds:
+          - !Ref SecurityGrp
+        Type: EC2
+        Subnets:
+          - !Ref Subnet
+        MinvCpus: 0
+        ImageId: !Ref AmiId
+        LaunchTemplate:
+          LaunchTemplateId: !ImportValue LaunchTemplt
+          Version: $Default
+        InstanceRole: !Sub 'arn:aws:iam::${AWS::AccountId}:instance-profile/lly-aise-s3rw-cse-srvcrl'
+        InstanceTypes:
+          - optimal
+        Tags: {"CostCenter" : "0004656000", "CostCenterApprover" : "Rie Tawa(2091353)", "SystemOwner" : "Rie Tawa(2091353)", "SystemCustodian" : "Ryoji Okabe(2193686)", "PrimaryItContact" : "Cliff Hu(2277809)", "Name" : "lly-aise-alert-ci-btch", "Level1BusinessArea" : "Bio-Medicines Business Unit", "DataClassification" : "Yellow", "Hipaa" : "FALSE", "SnowRequestId" : "XXXX", "ResourceCI" : "CI00000000413229"}
+      State: ENABLED
+
+#Job Definition 1
+  llyaisealerttmmdlngjdbtch:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      JobDefinitionName: lly-aise-alert-tmmdlng-jd-btch
+      ContainerProperties:
+        Command: 
+          - !Ref AlertInterfaceBucket        
+          - engine-config/timeseries_payload.json
+        Image: !Ref TimemdlContainerImg
+        Memory: 7680
+        Vcpus: 1
+      Timeout:
+        AttemptDurationSeconds: 180000 
+    
+#Job Definition 2
+  llyaisealerttrndjdbtch:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      JobDefinitionName: lly-aise-alert-trnd-jd-btch
+      ContainerProperties:
+        Command: 
+          - !Ref AlertInterfaceBucket
+          - engine-config/trend_payload.json  
+        Image: !Ref TrendContainerImage
+        Memory: 3584
+        Vcpus: 1
+      Timeout:
+        AttemptDurationSeconds: 3600
+        
+        
+#Job Definition 3
+  llyaisealertstckjdbtch:
+    Type: AWS::Batch::JobDefinition
+    Properties:
+      Type: container
+      JobDefinitionName: lly-aise-alert-stck-jd-btch
+      ContainerProperties:
+        Command: #change 
+          - !Ref AlertInterfaceBucket
+          - engine-config/stock_payload.json  
+        Image: !Ref StockContainerImg
+        Memory: 1024
+        Vcpus: 1
+      Timeout:
+        AttemptDurationSeconds: 3600
+        
+        
+#Job Queue
+  llyaisealertjqbtch:
+    Type: AWS::Batch::JobQueue
+    DependsOn:
+     - llyaisealertce1btch
+     - llyaisealertce2btch
+     - llyaisealertce3btch
+    Properties:
+      ComputeEnvironmentOrder:
+        - Order: 1
+          ComputeEnvironment: !Ref llyaisealertce1btch
+        - Order: 2
+          ComputeEnvironment: !Ref llyaisealertce2btch
+        - Order: 3
+          ComputeEnvironment: !Ref llyaisealertce3btch
+      State: ENABLED
+      Priority: 1
+      JobQueueName: lly-aise-alert-jq-btch        
+
+
+
+##########
+#State Machine
+##########
+
+  llyaisetimeseriesenginesfn:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+     - llyaisealerttmmdlngjdbtch
+     - llyaisealertjqbtch
+    Properties:
+      StateMachineName: lly-aise-timeseries-engine-sfn
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-lme-bte-sfn-srvcrl'
+      StateMachineType: STANDARD
+      DefinitionString:  
+        Fn::Sub:
+           - |- 
+             {
+               "Comment": "State machine of timeseries engine",
+               "StartAt": "Check Engine Runs and Pre-setup",
+               "States": {
+                 "Check Engine Runs and Pre-setup": {
+                   "Type": "Task",
+                   "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                   "Parameters": {
+                     "FunctionName": "lly-aise-alert-engines-check-run-lfn",
+                     "Payload": {
+                       "token.$": "$$.Task.Token",
+                       "engineName": "timeseries",
+                       "interfaceBucket": "${interfaceBucket}",
+                       "processBucketName": "${processBucketName}",
+                       "moveFromFileKey": "${interfaceBucket}:file-template/timeseries_product_hco_type.csv",
+                       "moveToFileKey": "${interfaceBucket}:logs/timeseries/timeseries_product_hco_type.csv",
+                       "archiveFromFileKey": "${interfaceBucket}:engine-batch-array-file/timeseries_product_hco_type.csv,${interfaceBucket}:logs/timeseries/timeseries_product_hco_type.csv,${interfaceBucket}:engine-config/timeseries_payload.json,${interfaceBucket}:engine-config/trend_payload.json,${interfaceBucket}:engine-config/stock_payload.json",
+                       "archiveToFileKey": "${interfaceBucket}:archieve-logs/timeseries/batch_array_timeseries_product_hco_type.csv,${interfaceBucket}:archieve-logs/timeseries/log_timeseries_product_hco_type.csv,${interfaceBucket}:archieve-logs/timeseries/timeseries_payload.json,${interfaceBucket}:archieve-logs/timeseries/trend_payload.json,${interfaceBucket}:archieve-logs/timeseries/stock_payload.json",
+                       "deleteBucketFolder": "${interfaceBucket}:logs/timeseries",
+                       "computeEnvironmentCPU": "lly-aise-alert-ce-1-btch:2,lly-aise-alert-ce-2-btch:4,lly-aise-alert-ce-3-btch:4",
+                       "instanceName": "lly-aise-alert-ci-btch"
+                     }
+                    },
+                    "Next": "Is Engine Scheduled and Previous Orchestration Stop?",
+                    "ResultPath": "$.EngineStatus",
+                    "InputPath" : null
+                 },
+                 "Is Engine Scheduled and Previous Orchestration Stop?": {
+                   "Type": "Choice",
+                   "Choices": [
+                     {
+                        "Variable": "$.EngineStatus.RunFlag",
+                        "StringEquals": "Yes",
+                        "Next": "Run Timeseries engine"
+                     }
+                    ],
+                    "Default": "Run Completed"
+                 },
+                 "Run Completed": {
+                   "Type": "Pass",
+                   "End": true
+                 },
+                 "Run Timeseries engine": {
+                   "Type": "Task",
+                   "Resource": "arn:aws:states:::batch:submitJob.sync",
+                   "Parameters": {
+                      "JobName": "BatchJobForTimeseries",
+                      "JobQueue": "lly-aise-alert-jq-btch",
+                      "JobDefinition": "lly-aise-alert-tmmdlng-jd-btch",
+                      "ArrayProperties": {
+                        "Size.$": "$.EngineStatus.BatchArraySize"
+                      }
+                    },
+                    "Catch": [
+                      {
+                        "ErrorEquals": [
+                          "States.ALL"
+                        ],
+                        "Next": "Update Timeseries Engine Output Folder in other Alert Engines",
+                        "ResultPath": null
+                      }
+                    ],
+                    "Next": "Update Timeseries Engine Output Folder in other Alert Engines",
+                    "ResultPath": null
+                 },
+                 "Update Timeseries Engine Output Folder in other Alert Engines": {
+                   "Type": "Task",
+                   "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                   "Parameters": {
+                     "FunctionName": "lly-aise-timeseries-postprocessing-lfn",
+                     "Payload": {
+                       "token.$": "$$.Task.Token",
+                       "interfaceBucket": "${interfaceBucket}",
+                       "inprocessBucket": "${processBucketName}",
+                       "timeSeriesDeleteFolder.$": "$.EngineStatus.TimeSeriesFolder"
+                     }
+                    },
+                    "Next": "Wait Require, if other engines running?",
+                    "ResultPath": "$.AlertEngineStatus"
+                 },
+                 "Wait Require, if other engines running?": {
+                   "Type": "Choice",
+                   "Choices": [
+                     {
+                       "Variable": "$.AlertEngineStatus.WaitFlag",
+                       "StringEquals": "Yes",
+                       "Next": "Wait for 10 minutes"
+                     }
+                    ],
+                    "Default": "Run Completed"
+                 },
+                 "Wait for 10 minutes": {
+                   "Type": "Wait",
+                   "Seconds": 600,
+                   "Next": "Update Timeseries Engine Output Folder in other Alert Engines",
+                   "InputPath": null
+                 }
+                }
+             }
+           - interfaceBucket: !Ref AlertInterfaceBucket
+             processBucketName: !Ref AlertInprocessBucket
+
+  llyaisetrendenginesfn:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+     - llyaisealerttrndjdbtch
+     - llyaisealertjqbtch
+    Properties:
+      StateMachineName: lly-aise-trend-engine-sfn
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-lme-bte-sfn-srvcrl'
+      StateMachineType: STANDARD
+      DefinitionString:  
+        Fn::Sub:     
+          - |- 
+            {
+              "Comment": "State machine of trend engine",
+              "StartAt": "Check Engine Runs and Pre-setup",
+              "States": {
+                "Check Engine Runs and Pre-setup": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                    "FunctionName": "lly-aise-alert-engines-check-run-lfn",
+                    "Payload": {
+                      "token.$": "$$.Task.Token",
+                      "engineName": "trend",
+                      "interfaceBucket": "${interfaceBucket}",
+                      "processBucketName": "${processBucketName}",
+                      "moveFromFileKey": "${interfaceBucket}:file-template/trend_product_hco_type.csv,${interfaceBucket}:file-template/trend_result.csv",
+                      "moveToFileKey": "${interfaceBucket}:logs/trend_product_hco_type.csv,${interfaceBucket}:output-s3-jdwh/trend_result.csv",
+                      "archiveFromFileKey": "${interfaceBucket}:engine-batch-array-file/trend_product_hco_type.csv,${interfaceBucket}:logs/trend_product_hco_type.csv,${interfaceBucket}:output-s3-jdwh/trend_result.csv",
+                      "archiveToFileKey": "${interfaceBucket}:archieve-logs/batch_array_trend_product_hco_type.csv,${interfaceBucket}:archieve-logs/log_trend_product_hco_type.csv,${interfaceBucket}:archieve-logs/trend_result.csv",
+                      "deleteBucketFolder": "${processBucketName}:output-trend-engine",
+                      "computeEnvironmentCPU": "lly-aise-alert-ce-1-btch:2,lly-aise-alert-ce-2-btch:4,lly-aise-alert-ce-3-btch:4",
+                      "instanceName": "lly-aise-alert-ci-btch"
+                    }
+                  },
+                  "Next": "Is Engine Scheduled and Previous Orchestration Stop?",
+                  "ResultPath": "$.EngineStatus"
+                },
+                "Is Engine Scheduled and Previous Orchestration Stop?": {
+                  "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.EngineStatus.RunFlag",
+                        "StringEquals": "Yes",
+                        "Next": "Run Trend engine"
+                      }
+                    ],
+                    "Default": "Run Completed"
+                },
+                "Run Completed": {
+                  "Type": "Pass",
+                   "End": true
+                },
+                "Run Trend engine": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::batch:submitJob.sync",
+                  "Parameters": {
+                    "JobName": "BatchJobForTrend",
+                    "JobQueue": "lly-aise-alert-jq-btch",
+                    "JobDefinition": "lly-aise-alert-trnd-jd-btch",
+                    "ArrayProperties": {
+                    "Size.$": "$.EngineStatus.BatchArraySize"
+                    }
+                  },
+                  "Catch": [
+                    {
+                     "ErrorEquals": [
+                       "States.ALL"
+                     ],
+                     "Next": "Consolidate Trend engine output files",
+                     "ResultPath": null
+                    }
+                  ],
+                  "Next": "Consolidate Trend engine output files",
+                  "ResultPath": null
+                },
+                "Consolidate Trend engine output files": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                    "FunctionName": "lly-aise-consolidate-alert-file-lfn",
+                    "Payload": {
+                      "token.$": "$$.Task.Token",
+                      "interfaceBucket": "${interfaceBucket}",
+                      "processBucket": "${processBucketName}",
+                      "outputEngineFolder": "output-trend-engine",
+                      "engineName": "Trend"
+                    }
+                  },
+                  "Next": "Load the Trend engine results from S3 to DB",
+                  "ResultPath": null
+                },
+                "Load the Trend engine results from S3 to DB": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                    "FunctionName": "lly-aise-iicstask-trgr-lfn",
+                    "Payload": {
+                      "token.$": "$$.Task.Token",
+                      "taskName": "RUN_AISE_TRND_ALRT_AWS_DB",
+                      "taskType": "WORKFLOW",
+                      "triggerBucketName": "${triggerBucketName}",
+                      "tokenFolder": "token"
+                    }
+                  },
+                  "Next": "Load suggestions to Veeva",
+                  "ResultPath": null
+                },
+                "Load suggestions to Veeva": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                    "FunctionName": "lly-aise-iicstask-trgr-lfn",
+                    "Payload": {
+                      "token.$": "$$.Task.Token",
+                      "taskName": "RUN_AISE_TRND_ALRT_DB_VEEVA",
+                      "taskType": "WORKFLOW",
+                      "triggerBucketName": "${triggerBucketName}",
+                      "tokenFolder": "token"
+                    }
+                  },
+                  "Next": "Run Completed",
+                  "ResultPath": null
+                }
+              }
+            }
+          - triggerBucketName: !Ref TriggerBucket
+            interfaceBucket: !Ref AlertInterfaceBucket
+            processBucketName: !Ref AlertInprocessBucket          
+        
+        
+  llyaisestockenginesfn:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+     - llyaisealertstckjdbtch
+     - llyaisealertjqbtch
+    Properties:
+      StateMachineName: lly-aise-stock-engine-sfn
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-lme-bte-sfn-srvcrl'
+      StateMachineType: STANDARD
+      DefinitionString:  
+        Fn::Sub:
+          - |- 
+            {
+              "Comment": "State machine of stock engine",
+              "StartAt": "Check Engine Runs and Pre-setup",
+              "States": {
+                "Check Engine Runs and Pre-setup": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                    "FunctionName": "lly-aise-alert-engines-check-run-lfn",
+                    "Payload": {
+                      "token.$": "$$.Task.Token",
+                      "engineName": "stock",
+                      "interfaceBucket": "${interfaceBucket}",
+                      "processBucketName": "${processBucketName}",
+                      "moveFromFileKey": "${interfaceBucket}:file-template/stock_product_hco_type.csv,${interfaceBucket}:file-template/stock_result.csv",
+                      "moveToFileKey": "${interfaceBucket}:logs/stock/stock_product_hco_type.csv,${interfaceBucket}:output-s3-jdwh/stock_result.csv",
+                      "archiveFromFileKey": "${interfaceBucket}:engine-batch-array-file/stock_product_hco_type.csv,${interfaceBucket}:logs/stock/stock_product_hco_type.csv,${interfaceBucket}:output-s3-jdwh/stock_result.csv",
+                      "archiveToFileKey": "${interfaceBucket}:archieve-logs/stock/batch_array_stock_product_hco_type.csv,${interfaceBucket}:archieve-logs/stock/log_stock_product_hco_type.csv,${interfaceBucket}:archieve-logs/stock/stock_result.csv",
+                      "deleteBucketFolder": "${interfaceBucket}:logs/stock,${processBucketName}:output-stock-engine",
+                      "computeEnvironmentCPU": "lly-aise-alert-ce-1-btch:2,lly-aise-alert-ce-2-btch:4,lly-aise-alert-ce-3-btch:4",
+                      "instanceName": "lly-aise-alert-ci-btch"
+                    }
+                  },
+                  "Next": "Is Engine Scheduled and Previous Orchestration Stop?",
+                  "ResultPath": "$.EngineStatus"
+                },
+                "Is Engine Scheduled and Previous Orchestration Stop?": {
+                  "Type": "Choice",
+                  "Choices": [
+                    {
+                      "Variable": "$.EngineStatus.RunFlag",
+                      "StringEquals": "Yes",
+                      "Next": "Run Stock engine"
+                    }
+                  ],
+                  "Default": "Run Completed"
+                },
+                "Run Completed": {
+                  "Type": "Pass",
+                  "End": true
+                },
+                "Run Stock engine": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::batch:submitJob.sync",
+                  "Parameters": {
+                    "JobName": "BatchJobForStock",
+                    "JobQueue": "lly-aise-alert-jq-btch",
+                    "JobDefinition": "lly-aise-alert-stck-jd-btch",
+                    "ArrayProperties": {
+                       "Size.$": "$.EngineStatus.BatchArraySize"
+                    }
+                  },
+                  "Catch": [
+                    {
+                      "ErrorEquals": [
+                        "States.ALL"
+                      ],
+                      "Next": "Consolidate stock engine output files",
+                      "ResultPath": null
+                    }
+                  ],
+                  "Next": "Consolidate stock engine output files",
+                  "ResultPath": null
+                },
+                "Consolidate stock engine output files": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                     "FunctionName": "lly-aise-consolidate-alert-file-lfn",
+                     "Payload": {
+                       "token.$": "$$.Task.Token",
+                       "interfaceBucket": "${interfaceBucket}",
+                       "processBucket": "${processBucketName}",
+                       "outputEngineFolder": "output-stock-engine",
+                       "engineName": "Stock"
+                     }
+                  },
+                  "Next": "Load the stock engine results from S3 to DB",
+                  "ResultPath": null
+                },
+                "Load the stock engine results from S3 to DB": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                     "FunctionName": "lly-aise-iicstask-trgr-lfn",
+                     "Payload": {
+                       "token.$": "$$.Task.Token",
+                       "taskName": "RUN_AISE_STCK_ALRT_AWS_DB",
+                       "taskType": "WORKFLOW",
+                       "triggerBucketName": "${triggerBucketName}",
+                       "tokenFolder": "token"
+                      }
+                  },
+                  "Next": "Load suggestions to Veeva",
+                  "ResultPath": null
+                },
+                "Load suggestions to Veeva": {
+                  "Type": "Task",
+                  "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+                  "Parameters": {
+                    "FunctionName": "lly-aise-iicstask-trgr-lfn",
+                    "Payload": {
+                      "token.$": "$$.Task.Token",
+                      "taskName": "RUN_AISE_STCK_ALRT_DB_VEEVA",
+                      "taskType": "WORKFLOW",
+                      "triggerBucketName": "${triggerBucketName}",
+                      "tokenFolder": "token"
+                    }
+                  },
+                "Next": "Run Completed",
+                "ResultPath": null
+                }
+              }
+            }
+          - interfaceBucket: !Ref AlertInterfaceBucket
+            triggerBucketName: !Ref TriggerBucket
+            processBucketName: !Ref AlertInprocessBucket         
+###########
+#Cloud Watch Events
+###########
+#lly-aise-stock-end-evntrl 
+  llyaisestockendevntrl:
+    Type: AWS::Events::Rule 
+    Properties:
+      Name: lly-aise-stock-end-evntrl
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-cldevntrul-srvcrl'
+      Description: Trigger lambda and sns topic on end of orchestration
+      EventPattern:
+        source:
+         - aws.states
+        detail-type:
+         - Step Functions Execution Status Change
+        detail:
+          status:
+            - FAILED
+            - TIMED_OUT
+            - ABORTED
+            - SUCCEEDED
+          stateMachineArn:
+            - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:lly-aise-stock-engine-sfn'
+      State: ENABLED
+      Targets:
+        - Arn: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:lly-aise-orchstrtn-end-lfn'  
+          Id: Targetv1
+          Input:
+            Fn::Sub:
+              - |-
+                {
+                  "interfaceBucketName":"${interfaceBucketName}",
+                  "stepFunctionStatusFileKey":"stepfunction-status/trend_engine_stepfunction_status_flag.csv",
+                  "runFlagKey":""
+                }
+              - interfaceBucketName: !Ref AlertInterfaceBucket       
+        - Arn: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:lly-aise-notfcn-sns-tpc'
+          Id: Targetv2
+          InputTransformer: 
+            InputPathsMap:
+              {
+                "Status": "$.detail.status",
+                "ExecutionARN": "$.detail.executionArn",
+                "DateTime": "$.time"
+              }
+            InputTemplate:
+              !Sub |
+                "Stock engine orchestration stopped with below details."
+                "Execution DateTime (UTC) :- <DateTime>"
+                "Status :- <Status>"
+                "Please check the Logs available at https://ap-northeast-1.console.aws.amazon.com/states/home?region=ap-northeast-1#/executions/details/<ExecutionARN>"
+  Permissionforevent:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: lly-aise-orchstrtn-end-lfn 
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "llyaisestockendevntrl"
+          - "Arn"
+
+
+#lly-aise-timeseries-end-evntrl: 
+  llyaisetimeseriesendevntrl:
+    Type: AWS::Events::Rule 
+    Properties:
+      Name: lly-aise-timeseries-end-evntrl
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-cldevntrul-srvcrl'
+      Description: Cloud watch rule to handle end of Time series orchestration and reset the necessary flags
+      EventPattern:
+        source:
+         - aws.states
+        detail-type:
+         - Step Functions Execution Status Change
+        detail:
+          status:
+            - FAILED
+            - TIMED_OUT
+            - ABORTED
+            - SUCCEEDED
+          stateMachineArn:
+            - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:lly-aise-timeseries-engine-sfn'
+      State: ENABLED
+      Targets:
+        - Arn: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:lly-aise-orchstrtn-end-lfn'  
+          Id: Targetv1
+          Input:
+            Fn::Sub:
+              - |-
+                {
+                  "interfaceBucketName":"${interfaceBucketName}",
+                  "stepFunctionStatusFileKey":"stepfunction-status/trend_engine_stepfunction_status_flag.csv",
+                  "runFlagKey":""
+                }
+              - interfaceBucketName: !Ref AlertInterfaceBucket       
+        - Arn: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:lly-aise-notfcn-sns-tpc'
+          Id: Targetv2
+          InputTransformer: 
+            InputPathsMap:
+              {
+                "Status": "$.detail.status",
+                "ExecutionARN": "$.detail.executionArn",
+                "DateTime": "$.time"
+              }
+            InputTemplate:
+              !Sub |
+                "Time Series engine orchestration stopped with below details."
+                "Execution DateTime (UTC) :- <DateTime>"
+                "Status :- <Status>"
+                "Please check the Logs available at https://ap-northeast-1.console.aws.amazon.com/states/home?region=ap-northeast-1#/executions/details/<ExecutionARN>"
+  Permissionforevent:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: lly-aise-orchstrtn-end-lfn 
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "llyaisetimeseriesendevntrl"
+          - "Arn"
+#lly-aise-trend-end-evntrl: 
+  llyaisetrendendevntrl:
+    Type: AWS::Events::Rule 
+    Properties:
+      Name: lly-aise-trend-end-evntrl
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lly-aise-cldevntrul-srvcrl'
+      Description: Cloud watch rule to handle end of Trend engine orchestration and reset the necessary flags
+      EventPattern:
+        source:
+         - aws.states
+        detail-type:
+         - Step Functions Execution Status Change
+        detail:
+          status:
+            - FAILED
+            - TIMED_OUT
+            - ABORTED
+            - SUCCEEDED
+          stateMachineArn:
+            - !Sub 'arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:lly-aise-trend-engine-sfn'
+      State: ENABLED
+      Targets:
+        - Arn: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:lly-aise-orchstrtn-end-lfn'  
+          Id: Targetv1
+          Input:
+            Fn::Sub:
+              - |-
+                {
+                  "interfaceBucketName":"${interfaceBucketName}",
+                  "stepFunctionStatusFileKey":"stepfunction-status/trend_engine_stepfunction_status_flag.csv",
+                  "runFlagKey":""
+                }
+              - interfaceBucketName: !Ref AlertInterfaceBucket       
+        - Arn: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:lly-aise-notfcn-sns-tpc'
+          Id: Targetv2
+          InputTransformer: 
+            InputPathsMap:
+              {
+                "Status": "$.detail.status",
+                "ExecutionARN": "$.detail.executionArn",
+                "DateTime": "$.time"
+              }
+            InputTemplate:
+              !Sub |
+                "Trend engine orchestration stopped with below details."
+                "Execution DateTime (UTC) :- <DateTime>"
+                "Status :- <Status>"
+                "Please check the Logs available at https://ap-northeast-1.console.aws.amazon.com/states/home?region=ap-northeast-1#/executions/details/<ExecutionARN>"
+  Permissionforevent:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: lly-aise-orchstrtn-end-lfn 
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "llyaisetrendendevntrl"
+          - "Arn"
+        
+      
