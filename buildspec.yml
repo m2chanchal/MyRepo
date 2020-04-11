@@ -10,33 +10,36 @@ version: 0.2
  
 phases: 
   install:
-    #runtime-versions:
-        #docker: 18     
+    runtime-versions:
+        docker: 18     
     commands: 
-      - sudo amazon-linux-extras install docker
-      # nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
-      # timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-      - sudo service docker start
+      # sudo amazon-linux-extras install docker
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      # sudo service docker start
   pre_build: 
     commands: 
-    - echo Logging in to Private Repo(Docker Hub).... 
+    - echo prebuild stage
+    # echo Logging in to Private Repo(Docker Hub).... 
     # aws --version
     # update the following line with your own region
-    - Sudo docker login --username m2chanchal --password Chuchu@17 
+    # Sudo docker login --username m2chanchal --password Chuchu@17 
   build: 
     commands: 
     - echo Build started on `date` 
     - echo Building the Docker image... 
     # update the following line with the name of your own ECR repository
-    - Sudo docker build -t myimage . 
+    - docker build -t myimage . 
     # update the following line with the URI of your own ECR repository (view the Push Commands in the console)
-    - Sudo docker tag myimage:latest m2chanchal/images12:latest 
+    - docker tag myimage:latest m2chanchal/images12:latest 
   post_build: 
-    commands: 
+    commands:
+    - echo Logging in to Private Repo(Docker Hub)....
+    - docker login --username m2chanchal --password Chuchu@17    
     - echo Build completed on `date` 
     - echo pushing to repo
     # update the following line with the URI of your own ECR repository
-    - Sudo docker push m2chanchal/images12:latest 
+    - docker push m2chanchal/images12:latest 
 #artifacts: 
     # - location 
     # - location 
