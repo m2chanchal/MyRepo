@@ -19,4 +19,4 @@ phases:
 artifacts:
   files:
     - target/rule.zip
-    - lambda.yaml
+    #- lambda.yaml
