@@ -18,5 +18,5 @@ phases:
       #- docker push $IMAGE_REPO_NAME:$IMAGE_TAG
 artifacts:
   files:
-    - rule.zip
+    - target/rule.zip
     - lambda.yaml
