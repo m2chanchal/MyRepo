@@ -19,6 +19,6 @@ def launch_stack():
       TemplateBody=temp_body,
       Capabilities=capabilities)
 	  
-if __name__=="__main__":
-    launch_stack()
+#if __name__=="__main__":
+#    launch_stack()
         
