@@ -12,8 +12,8 @@ cfn = boto3.client('cloudformation')
 
 def launch_stack():
     stackname = 'example_deploy.yaml'
-	capabilities = ['CAPABILITY_IAM', 'CAPABILITY_AUTO_EXPAND']
-	stackdata = cfn.create_stack(
+    capabilities = ['CAPABILITY_IAM', 'CAPABILITY_AUTO_EXPAND']
+    stackdata = cfn.create_stack(
       StackName=stackname,
       DisableRollback=True,
       TemplateBody=temp_body,
