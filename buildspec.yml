@@ -3,20 +3,37 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging in to Docker Hub...
-      #- docker login --username $username --password $password
+      #- echo Logging in to JFROG Artifactory...
+      - aws --version
+      #- docker --version
+      - apt update -y
+      - apt install software-properties-common -y
+      - apt install python3 -y
+      - apt install python3-pip -y
+      #- pip3 install -r requirements.txt
+      #- COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
   build:
-    commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...          
-      #- docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      #- docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $IMAGE_REPO_NAME:$IMAGE_TAG      
+     commands:
+       - echo Build started on `date`
+       - echo Logging into docker
+       #- docker login -u ${USER_EMAIL} -p ${USER_PASSWORD} elilillyco-aise-dev-docker-lc.jfrog.io
+       #- docker login -u ${USER_EMAIL} -p ${USER_PASSWORD} ${REPOSITORY_URI}
+       #- echo Building the Docker image Entering python script...
+       - chmod +x myscript.py
+       - ./myscript.py
   post_build:
     commands:
-      - echo Build completed on `date`
-      #- echo Pushing the Docker image...
-      #- docker push $IMAGE_REPO_NAME:$IMAGE_TAG
-artifacts:
-  files:
-    - rule.zip
-    - lambda.yaml
+      #- echo Build completed on `date`
+      #- echo Pushing the Docker images...
+      #- docker images
+      #- docker push $REPOSITORY_URI/$IMAGE_NAME:$IMAGE_TAG
+      #- echo Writing image definitions file...
+      #- printf '[{"name":$IMAGE_NAME,"imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json 
+
+# artifacts:
+
+#     files: imagedefinitions.json
+ 
+
+ 
