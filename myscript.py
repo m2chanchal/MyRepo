@@ -11,7 +11,7 @@ cfn = boto3.client('cloudformation')
 
 
 def launch_stack():
-    stackname = 'example_deploy'
+    stackname = 'example-deploy'
     capabilities = ['CAPABILITY_IAM', 'CAPABILITY_AUTO_EXPAND']
     stackdata = cfn.create_stack(
       StackName=stackname,
