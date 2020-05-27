@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  ApiGatewayExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: ApiGatewayRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "apigateway.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"  
+      Path: "/"
+      Policies:
+         - PolicyName: "lambdaproxy-execution" 
+           PolicyDocument:
+             Version: "2012-10-17"
+             Statement:
+               - Effect: Allow
+                 Action:
+                 - "lambda:InvokeFunction"
+                 Resource: "*" 
+         - PolicyName: "CloudWatchLogsPolicy"
+           PolicyDocument:
+             Version: "2012-10-17"
+             Statement:
+               - Effect: Allow
+                 Action:
+                 - "logs:CreateLogGroup"
+                 - "logs:CreateLogStream"
+                 - "logs:PutLogEvents"
+                 Resource: "*"
