@@ -15,7 +15,7 @@ phases:
   build:
      commands:
        - echo Build started on `date`
-       - echo Logging into docker
+       #- echo Logging into docker
        #- docker login -u ${USER_EMAIL} -p ${USER_PASSWORD} elilillyco-aise-dev-docker-lc.jfrog.io
        #- docker login -u ${USER_EMAIL} -p ${USER_PASSWORD} ${REPOSITORY_URI}
        #- echo Building the Docker image Entering python script...
@@ -23,13 +23,13 @@ phases:
        - ./myscript.py
   post_build:
     commands:
-      #- echo Build completed on `date`
+      - echo Build completed on `date`
       #- echo Pushing the Docker images...
       #- docker images
       #- docker push $REPOSITORY_URI/$IMAGE_NAME:$IMAGE_TAG
       #- echo Writing image definitions file...
       #- printf '[{"name":$IMAGE_NAME,"imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      - cat imagedefinitions.json 
+      #- cat imagedefinitions.json 
 
 # artifacts:
 
