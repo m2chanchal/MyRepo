@@ -10,7 +10,7 @@ temp_body = 'example.yml'
 cfn = boto3.client('cloudformation')
 
 
-def launch_stack():
+def main():
     stackname = 'example-deploy'
     capabilities = ['CAPABILITY_IAM', 'CAPABILITY_AUTO_EXPAND']
     stackdata = cfn.create_stack(
@@ -19,6 +19,6 @@ def launch_stack():
       TemplateBody=temp_body,
       Capabilities=capabilities)
 	  
-#if __name__=="__main__":
-#    launch_stack()
+if __name__=="__main__":
+    main()
         
