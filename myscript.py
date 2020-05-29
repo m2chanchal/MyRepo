@@ -2,10 +2,11 @@
 
 import os
 import boto3
+import yaml
 
-#here = os.path.dirname(__file__)
-#temp_body = os.path.join(here, 'dockerimages')
-temp_body = 'example.yml'
+here = os.path.dirname(__file__)
+temp_body = os.path.join(here, 'example.yml')
+#temp_body = 'example.yml'
 
 cfn = boto3.client('cloudformation')
 
